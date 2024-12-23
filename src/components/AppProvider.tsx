@@ -7,10 +7,7 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-//   BackpackWalletAdapter,
-//   BraveWalletAdapter,
   CoinbaseWalletAdapter,
-//   GlowWalletAdapter,
   LedgerWalletAdapter,
   TrustWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
@@ -19,7 +16,7 @@ import { useMemo } from 'react';
 import Header from './Header';
 
 // Import wallet modal styles
-require('@solana/wallet-adapter-react-ui/styles.css');
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 interface AppProviderProps {
   children: React.ReactNode;
@@ -33,10 +30,7 @@ export default function AppProvider({ children }: AppProviderProps) {
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-    //   new BackpackWalletAdapter(),
-    //   new BraveWalletAdapter(),
       new CoinbaseWalletAdapter(),
-    //   new GlowWalletAdapter(),
       new LedgerWalletAdapter(),
       new TrustWalletAdapter(),
     ],

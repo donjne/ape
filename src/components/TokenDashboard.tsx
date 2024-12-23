@@ -1,12 +1,12 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaDiscord, FaXTwitter, FaGlobe, FaCopy } from "react-icons/fa6";
 import { useWallet } from '@solana/wallet-adapter-react';
-
+import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -311,7 +311,13 @@ const TokenDashboard: React.FC = () => {
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-purple-400 transition-colors"
                       >
-                        <img src="/pump-icon.svg" alt="Pump" className="w-4 h-4" />
+                        <Image 
+                            src="/pump-icon.svg" 
+                            alt="Pump" 
+                            width={16} 
+                            height={16} 
+                            className="w-4 h-4" 
+                        />
                       </a>
                       <a
                         href={token.links.telegram}

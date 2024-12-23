@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaDiscord, FaXTwitter } from "react-icons/fa6";
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -20,7 +20,7 @@ const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const { connected } = useWallet();
+  // const { connected } = useWallet();
 
   const handleSearch = async (query: string): Promise<void> => {
     setSearchQuery(query);
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
             <motion.a
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              href="https://x.com"
+              href="https://x.com/heisdave7"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-blue-400 transition-colors"

@@ -23,7 +23,7 @@ interface AppProviderProps {
 }
 
 export default function AppProvider({ children }: AppProviderProps) {
-  const network = WalletAdapterNetwork.Devnet;
+  const network = WalletAdapterNetwork.Mainnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
   const wallets = useMemo(

@@ -15,7 +15,7 @@ import { FaArrowsRotate, FaSpinner } from "react-icons/fa6";
 import type { Token, SwapStatus } from "@/types/token";
 import { fetchToken } from "@/lib/api";
 import JSBI from 'jsbi';
-import { getAssociatedTokenAddress, getAccount } from "../../node_modules/@solana/spl-token";
+import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
 
 // Constants
 const SOLANA_RPC = "https://api.mainnet-beta.solana.com";

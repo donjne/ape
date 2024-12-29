@@ -11,12 +11,10 @@
   "dependencies": {
     "@jup-ag/api": "^6.0.32",
     "@jup-ag/react-hook": "^6.2.0",
-    "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-select": "^2.1.4",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.4",
-    "@solana/spl-token": "^0.4.9",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",

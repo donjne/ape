@@ -15,7 +15,7 @@ import { FaArrowsRotate, FaSpinner } from "react-icons/fa6";
 import type { Token, SwapStatus } from "@/types/token";
 import { fetchToken } from "@/lib/api";
 import JSBI from 'jsbi';
-import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
+// import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
 
 // Constants
 const SOLANA_RPC = "https://api.mainnet-beta.solana.com";
@@ -104,46 +104,46 @@ const TradeModal: React.FC<TradeModalProps> = ({ token, isOpen, onClose, initial
   
   
   // Add balance checking effect
-  useEffect(() => {
-    const checkBalances = async () => {
-      if (!publicKey || !tokenData) return;
+  // useEffect(() => {
+  //   const checkBalances = async () => {
+  //     if (!publicKey || !tokenData) return;
 
-      try {
-        // Check USDC balance
-        const usdcAta = await getAssociatedTokenAddress(USDC_MINT, publicKey);
-        try {
-          const usdcAccount = await getAccount(connection, usdcAta);
-          setUsdcBalance(Number(usdcAccount.amount) / Math.pow(10, USDC_DECIMALS));
-        } catch (e) {
-          setUsdcBalance(0);
-        }
+  //     try {
+  //       // Check USDC balance
+  //       const usdcAta = await getAssociatedTokenAddress(USDC_MINT, publicKey);
+  //       try {
+  //         const usdcAccount = await getAccount(connection, usdcAta);
+  //         setUsdcBalance(Number(usdcAccount.amount) / Math.pow(10, USDC_DECIMALS));
+  //       } catch (e) {
+  //         setUsdcBalance(0);
+  //       }
 
-        // Check token balance and account existence
-        const tokenMint = new PublicKey(tokenData.mintAddress);
-        const tokenAta = await getAssociatedTokenAddress(tokenMint, publicKey);
+  //       // Check token balance and account existence
+  //       const tokenMint = new PublicKey(tokenData.mintAddress);
+  //       const tokenAta = await getAssociatedTokenAddress(tokenMint, publicKey);
         
-        try {
-          const tokenAccount = await getAccount(connection, tokenAta);
-          setTokenBalance(Number(tokenAccount.amount) / Math.pow(10, tokenData.decimals));
-          setHasTokenAccount(true);
-        } catch (e) {
-          setTokenBalance(0);
-          setHasTokenAccount(false);
-        }
-      } catch (error) {
-        console.error('Error checking balances:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch wallet balances",
-          variant: "destructive",
-        });
-      }
-    };
+  //       try {
+  //         const tokenAccount = await getAccount(connection, tokenAta);
+  //         setTokenBalance(Number(tokenAccount.amount) / Math.pow(10, tokenData.decimals));
+  //         setHasTokenAccount(true);
+  //       } catch (e) {
+  //         setTokenBalance(0);
+  //         setHasTokenAccount(false);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error checking balances:', error);
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to fetch wallet balances",
+  //         variant: "destructive",
+  //       });
+  //     }
+  //   };
 
-    if (isOpen) {
-      checkBalances();
-    }
-  }, [publicKey, tokenData, isOpen, connection]);
+  //   if (isOpen) {
+  //     checkBalances();
+  //   }
+  // }, [publicKey, tokenData, isOpen, connection]);
 
    // Add quote staleness check
    useEffect(() => {

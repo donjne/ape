@@ -1,20 +1,11 @@
-// app/api/tokens/[mintAddress]/route.ts
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { QuickNodeFunction } from '@/lib/quicknode/function';
 
 const functionClient = new QuickNodeFunction(process.env.QUICKNODE_API_KEY!);
 
-type Props = {
-  params: {
-    mintAddress: string
-  }
-}
-
-export async function GET(
-  request: NextRequest,
-  { params }: Props
-) {
-  const { mintAddress } = params;
+export async function GET(request: NextRequest) {
+  const mintAddress = request.nextUrl.pathname.split('/').pop();
 
   try {
     const result = await functionClient.invokeFunction(

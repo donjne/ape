@@ -4,11 +4,17 @@ import { QuickNodeFunction } from '@/lib/quicknode/function';
 
 const functionClient = new QuickNodeFunction(process.env.QUICKNODE_API_KEY!);
 
+type Props = {
+  params: {
+    mintAddress: string
+  }
+}
+
 export async function GET(
   request: NextRequest,
-  context: { params: { mintAddress: string } }
+  { params }: Props
 ) {
-  const { mintAddress } = context.params;
+  const { mintAddress } = params;
 
   try {
     const result = await functionClient.invokeFunction(

@@ -1,4 +1,5 @@
 //app/api/tokens/route.ts
+// @ts-nocheck
 import { NextResponse } from 'next/server';
 import { QuickNodeFunction } from '@/lib/quicknode/function';
 

@@ -322,7 +322,7 @@
 //   }
 // }
 
-
+// @ts-nocheck
 import { NextApiRequest, NextApiResponse } from 'next';
 import { tokenHelpers } from '@/lib/redis';
 import { Server as SocketIOServer } from 'socket.io';

@@ -361,40 +361,75 @@ function calculate24hChange(token: Token): number {
   //   loadTokens();
   // }, [toast]);
 
+  const loadTokens = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const initialTokens = await fetchTokens();
+      const enhancedTokens = await Promise.all(
+        initialTokens.map(async (token) => {
+          try {
+            const details = await fetchTokenWithJupiter(token.mintAddress);
+            return {
+              ...token,
+              ...details,
+              age: calculateTokenAge(token.createdAt),
+            };
+          } catch (error) {
+            console.error(`Failed to fetch details for ${token.mintAddress}:`, error);
+            return token;
+          }
+        })
+      );
+      setTokens(enhancedTokens);
+      console.log('Tokens after initial load:', enhancedTokens); // Debug log
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch tokens');
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch tokens',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
     // Initial data load
     useEffect(() => {
-      const loadTokens = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-          const initialTokens = await fetchTokens();
-          const enhancedTokens = await Promise.all(
-            initialTokens.map(async (token) => {
-              try {
-                const details = await fetchTokenWithJupiter(token.mintAddress);
-                return {
-                  ...token,
-                  ...details,
-                  age: calculateTokenAge(token.createdAt),
-                };
-              } catch (error) {
-                console.error(`Failed to fetch details for ${token.mintAddress}:`, error);
-                return token;
-              }
-            })
-          );
-          setTokens(enhancedTokens);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch tokens');
-          toast({
-            title: 'Error',
-            description: 'Failed to fetch tokens',
-            variant: 'destructive',
-          });
-        } finally {
-          setLoading(false);
-        }
-      };
+      // const loadTokens = async () => {
+      //   try {
+      //     setLoading(true);
+      //     setError(null);
+      //     const initialTokens = await fetchTokens();
+      //     const enhancedTokens = await Promise.all(
+      //       initialTokens.map(async (token) => {
+      //         try {
+      //           const details = await fetchTokenWithJupiter(token.mintAddress);
+      //           return {
+      //             ...token,
+      //             ...details,
+      //             age: calculateTokenAge(token.createdAt),
+      //           };
+      //         } catch (error) {
+      //           console.error(`Failed to fetch details for ${token.mintAddress}:`, error);
+      //           return token;
+      //         }
+      //       })
+      //     );
+      //     setTokens(enhancedTokens);
+      //     console.log('Tokens after initial load:', enhancedTokens);
+      //   } catch (err) {
+      //     setError(err instanceof Error ? err.message : 'Failed to fetch tokens');
+      //     toast({
+      //       title: 'Error',
+      //       description: 'Failed to fetch tokens',
+      //       variant: 'destructive',
+      //     });
+      //   } finally {
+      //     setLoading(false);
+      //   }
+      // };
   
       loadTokens();
     }, []);
@@ -422,7 +457,7 @@ function calculate24hChange(token: Token): number {
               title: 'New Token',
               description: `New token detected: ${enhancedToken.symbol}`,
             });
-            
+            console.log('New token added:', enhancedToken);
             return [enhancedToken, ...prevTokens];
           });
         } catch (err) {
@@ -691,7 +726,11 @@ function calculate24hChange(token: Token): number {
           <h2 className="text-lg font-semibold text-red-500">Error Loading Tokens</h2>
           <p className="text-gray-400 mt-2">{error}</p>
           <Button 
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setError(null); // Reset error state before retry
+              setLoading(true); // Set loading state to true before retry
+              loadTokens(); // Assuming loadTokens is defined in scope or you move this logic here
+            }}
             className="mt-4"
           >
             Retry

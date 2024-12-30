@@ -230,39 +230,120 @@ function calculate24hChange(token: Token): number {
   //   loadTokens();
   // }, [toast]);
 
-  // USING PUSHER
-  useEffect(() => {
-    const channel = pusherClient.subscribe('tokens-channel')
-
-    channel.bind('new-token', (newToken: Token) => {
-      try {
-        setTokens(prevTokens => {
-          const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress)
-          if (exists) return prevTokens
-          
-          const tokenWithAge = {
-            ...newToken,
-            age: calculateTokenAge(newToken.createdAt)
-          }
-          
+    // Initial data load
+    useEffect(() => {
+      const loadTokens = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const initialTokens = await fetchTokens();
+          const enhancedTokens = await Promise.all(
+            initialTokens.map(async (token) => {
+              try {
+                const details = await fetchTokenDetailsFromAPI(token.mintAddress);
+                return {
+                  ...token,
+                  ...details,
+                  age: calculateTokenAge(token.createdAt),
+                };
+              } catch (error) {
+                console.error(`Failed to fetch details for ${token.mintAddress}:`, error);
+                return token;
+              }
+            })
+          );
+          setTokens(enhancedTokens);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch tokens');
           toast({
-            title: 'New Token',
-            description: `New token detected: ${tokenWithAge.symbol}`,
-          })
+            title: 'Error',
+            description: 'Failed to fetch tokens',
+            variant: 'destructive',
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      loadTokens();
+    }, []);
+  
+    // Pusher real-time updates
+    useEffect(() => {
+      const channel = pusherClient.subscribe('tokens-channel');
+  
+      channel.bind('new-token', async (newToken: Token) => {
+        try {
+          // Fetch additional details for the new token
+          const details = await fetchTokenDetailsFromAPI(newToken.mintAddress);
           
-          return [tokenWithAge, ...prevTokens]
-        })
-      } catch (err) {
-        console.error('Error processing new token:', err)
-      }
-    })
+          setTokens(prevTokens => {
+            const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress);
+            if (exists) return prevTokens;
+            
+            const enhancedToken = {
+              ...newToken,
+              ...details,
+              age: calculateTokenAge(newToken.createdAt)
+            };
+            
+            toast({
+              title: 'New Token',
+              description: `New token detected: ${enhancedToken.symbol}`,
+            });
+            
+            return [enhancedToken, ...prevTokens];
+          });
+        } catch (err) {
+          console.error('Error processing new token:', err);
+          toast({
+            title: 'Error',
+            description: 'Failed to process new token',
+            variant: 'destructive',
+          });
+        }
+      });
+  
+      return () => {
+        channel.unbind_all();
+        pusherClient.unsubscribe('tokens-channel');
+      };
+    }, []);
 
-    // Cleanup
-    return () => {
-      channel.unbind_all()
-      pusherClient.unsubscribe('tokens-channel')
-    }
-  }, [])
+
+  // USING PUSHER
+  // useEffect(() => {
+  //   const channel = pusherClient.subscribe('tokens-channel')
+
+  //   channel.bind('new-token', (newToken: Token) => {
+  //     try {
+  //       setTokens(prevTokens => {
+  //         const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress)
+  //         if (exists) return prevTokens
+          
+  //         const tokenWithAge = {
+  //           ...newToken,
+  //           age: calculateTokenAge(newToken.createdAt)
+  //         }
+          
+  //         toast({
+  //           title: 'New Token',
+  //           description: `New token detected: ${tokenWithAge.symbol}`,
+  //         })
+          
+  //         return [tokenWithAge, ...prevTokens]
+  //       })
+  //     } catch (err) {
+  //       console.error('Error processing new token:', err)
+  //     }
+  //   })
+
+  //   // Cleanup
+  //   return () => {
+  //     channel.unbind_all()
+  //     pusherClient.unsubscribe('tokens-channel')
+  //   }
+  // }, [])
 
     // Initialize Socket.IO connection
     // useEffect(() => {
@@ -338,41 +419,41 @@ function calculate24hChange(token: Token): number {
     // }, []);
 
   // Fetch initial data
-  useEffect(() => {
-  const loadTokens = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const initialTokens = await fetchTokens(); // Fetch basic tokens first
-      const enhancedTokens = await Promise.all(initialTokens.map(async (token) => {
-        try {
-          // Fetch detailed data for each token from CoinGecko
-          const details = await fetchTokenDetailsFromAPI(token.mintAddress);
-          return {
-            ...token,
-            ...details,
-            age: calculateTokenAge(token.createdAt), // Assuming createdAt is already set
-          };
-        } catch (error) {
-          console.error(`Failed to fetch details for ${token.mintAddress}:`, error);
-          return token; // Keep the original token data if fetching details fails
-        }
-      }));
-      setTokens(enhancedTokens);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch tokens');
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch tokens',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+//   useEffect(() => {
+//   const loadTokens = async () => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+//       const initialTokens = await fetchTokens(); // Fetch basic tokens first
+//       const enhancedTokens = await Promise.all(initialTokens.map(async (token) => {
+//         try {
+//           // Fetch detailed data for each token from CoinGecko
+//           const details = await fetchTokenDetailsFromAPI(token.mintAddress);
+//           return {
+//             ...token,
+//             ...details,
+//             age: calculateTokenAge(token.createdAt), // Assuming createdAt is already set
+//           };
+//         } catch (error) {
+//           console.error(`Failed to fetch details for ${token.mintAddress}:`, error);
+//           return token; // Keep the original token data if fetching details fails
+//         }
+//       }));
+//       setTokens(enhancedTokens);
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : 'Failed to fetch tokens');
+//       toast({
+//         title: 'Error',
+//         description: 'Failed to fetch tokens',
+//         variant: 'destructive',
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  loadTokens();
-}, [toast]);
+//   loadTokens();
+// }, [toast]);
 
   // Set up real-time updates
   // useEffect(() => {

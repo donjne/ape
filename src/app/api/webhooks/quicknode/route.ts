@@ -329,17 +329,27 @@ import type { Token } from '@/types/token'
 
 export async function POST(req: Request) {
   try {
+    console.log('Webhook received')
+    
     const body = await req.json()
+    console.log('Webhook body:', body)
+    
     const newToken = body.token as Token
+    console.log('New token:', newToken)
 
     // Validate security token
     const securityToken = req.headers.get('x-api-key')
+    console.log('Security token received:', securityToken)
+    
     if (securityToken !== process.env.QUICKNODE_WEBHOOK_TOKEN) {
+      console.error('Invalid security token')
       return NextResponse.json({ error: 'Invalid security token' }, { status: 401 })
     }
 
     // Trigger event on Pusher
+    console.log('Triggering Pusher event on channel: tokens-channel')
     await pusherServer.trigger('tokens-channel', 'new-token', newToken)
+    console.log('Pusher event triggered successfully')
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -347,6 +357,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+// import { NextResponse } from 'next/server'
+// import { pusherServer } from '@/lib/pusher'
+// import type { Token } from '@/types/token'
+
+// export async function POST(req: Request) {
+//   try {
+//     const body = await req.json()
+//     const newToken = body.token as Token
+
+//     // Validate security token
+//     const securityToken = req.headers.get('x-api-key')
+//     if (securityToken !== process.env.QUICKNODE_WEBHOOK_TOKEN) {
+//       return NextResponse.json({ error: 'Invalid security token' }, { status: 401 })
+//     }
+
+//     // Trigger event on Pusher
+//     await pusherServer.trigger('tokens-channel', 'new-token', newToken)
+
+//     return NextResponse.json({ success: true })
+//   } catch (error) {
+//     console.error('Webhook error:', error)
+//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+//   }
+// }
 // import { NextApiRequest, NextApiResponse } from 'next';
 // import { tokenHelpers } from '@/lib/redis';
 // import { Server as SocketIOServer } from 'socket.io';

@@ -1,22 +1,26 @@
 // app/api/tokens/coingecko/route.ts
 import type { NextRequest } from 'next/server';
-import type { Token } from '@/types/token'
+import type { Token } from '@/types/token';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mintAddress = searchParams.get('mintAddress');
 
+  console.log('GET request received for token metadata:', mintAddress);
+
   // Check if mintAddress is provided
   if (!mintAddress) {
+    console.log('Invalid or missing mintAddress');
     return new Response(JSON.stringify({ error: 'Invalid or missing mintAddress' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const apiKey = process.env.COINGECKO_API_KEY; // Ensure this is set in your environment variables
+  const apiKey = process.env.COINGECKO_API_KEY;
 
   if (!apiKey) {
+    console.error('API Key not configured in environment variables');
     return new Response(JSON.stringify({ error: 'API Key not configured' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -24,13 +28,30 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log(`Fetching token data from CoinGecko for mintAddress: ${mintAddress}`);
+    
     const response = await fetch(`https://api.coingecko.com/api/v3/coins/solana/contract/${mintAddress}?localization=false&x_cg_pro_api_key=${apiKey}`);
 
+    console.log('Response from CoinGecko:', response.status, response.statusText);
+
     if (!response.ok) {
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After') || '30'; // Default to 30 seconds if not specified
+        console.warn(`Rate limit exceeded from CoinGecko. Retry after: ${retryAfter} seconds`);
+        return new Response(JSON.stringify({ 
+          error: 'Rate limit exceeded. Please try again later.', 
+          retryAfter: parseInt(retryAfter, 10) 
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
+
+    console.log('Data received from CoinGecko:', JSON.stringify(data, null, 2));
 
     // Constructing the Token object according to the interface
     const token: Token = {
@@ -53,11 +74,14 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    console.log('Token object constructed:', JSON.stringify(token, null, 2));
+
     return new Response(JSON.stringify(token), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('Error in fetching token metadata:', error instanceof Error ? error.message : 'Unknown error');
     if (error instanceof Error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,

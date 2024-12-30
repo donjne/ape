@@ -101,12 +101,52 @@ async function fetchTokenWithJupiter(mintAddress: string): Promise<Token> {
     const response = await fetch(`/api/tokens/jupiter?mintAddress=${mintAddress}`);
     if (!response.ok) {
       const errorData = await response.json(); // Try to parse error details from response
+      if (errorData.error === "Token not found") {
+        // Return a partial token with just the information from the webhook
+        return {
+          mintAddress: mintAddress,
+          name: 'NEW MEME TOKEN', // or some default value
+          symbol: 'NMT',
+          age: 0, // We'll update this later
+          decimals: 9,
+          createdAt: 1,
+          signature: '',
+          marketCap: 0,
+          volume24h: 0,
+          priceUSD: 1,
+          change24h: 0,
+          links: {
+            pump: `https://pump.fun/coin/${mintAddress}/`, // Fill in with actual links if available
+            telegram: '',
+            twitter: '',
+            website: ''
+          }
+        };
+      }
       throw new Error(`Failed to fetch token details: ${errorData.error || response.statusText}`);
     }
     return await response.json() as Token;
   } catch (error) {
     console.error('Error fetching token metadata:', error);
-    throw error; // Re-throwing the error for the caller to handle
+    return {
+      mintAddress: mintAddress,
+      name: 'NEW MEME TOKEN', // or some default value
+      symbol: 'NMT',
+      age: 0, // We'll update this later
+      decimals: 9,
+      createdAt: 1,
+      signature: '',
+      marketCap: 0,
+      volume24h: 0,
+      priceUSD: 1,
+      change24h: 0,
+      links: {
+        pump: `https://pump.fun/coin/${mintAddress}/`, // Fill in with actual links if available
+        telegram: '',
+        twitter: '',
+        website: ''
+      }
+    };
   }
 }
 
@@ -679,6 +719,14 @@ function calculate24hChange(token: Token): number {
     try {
       setLoading(true);
       const tokenData = await fetchTokenWithJupiter(mintAddress);
+
+      if (!tokenData.name || !tokenData.symbol) {
+        toast({
+          title: "Info",
+          description: "Metadata for this token hasn't been provided yet. Showing available info.",
+          variant: "default",
+        });
+      }
       
       // Update this specific token in our list
       setTokens(prevTokens => 

@@ -82,9 +82,23 @@ import { getMplTokenMetadataProgramId } from '@metaplex-foundation/mpl-token-met
 //   }
 // }
 
-async function fetchTokenMetadata(mintAddress: string): Promise<Token> {
+// async function fetchTokenMetadata(mintAddress: string): Promise<Token> {
+//   try {
+//     const response = await fetch(`/api/tokens/coingecko?mintAddress=${mintAddress}`);
+//     if (!response.ok) {
+//       const errorData = await response.json(); // Try to parse error details from response
+//       throw new Error(`Failed to fetch token details: ${errorData.error || response.statusText}`);
+//     }
+//     return await response.json() as Token;
+//   } catch (error) {
+//     console.error('Error fetching token metadata:', error);
+//     throw error; // Re-throwing the error for the caller to handle
+//   }
+// }
+
+async function fetchTokenWithJupiter(mintAddress: string): Promise<Token> {
   try {
-    const response = await fetch(`/api/tokens/coingecko?mintAddress=${mintAddress}`);
+    const response = await fetch(`/api/tokens/jupiter?mintAddress=${mintAddress}`);
     if (!response.ok) {
       const errorData = await response.json(); // Try to parse error details from response
       throw new Error(`Failed to fetch token details: ${errorData.error || response.statusText}`);
@@ -317,7 +331,7 @@ function calculate24hChange(token: Token): number {
           const enhancedTokens = await Promise.all(
             initialTokens.map(async (token) => {
               try {
-                const details = await fetchTokenMetadata(token.mintAddress);
+                const details = await fetchTokenWithJupiter(token.mintAddress);
                 return {
                   ...token,
                   ...details,
@@ -352,7 +366,7 @@ function calculate24hChange(token: Token): number {
       channel.bind('new-token', async (newToken: Token) => {
         try {
           // Fetch additional details for the new token
-          const details = await fetchTokenMetadata(newToken.mintAddress);
+          const details = await fetchTokenWithJupiter(newToken.mintAddress);
           
           setTokens(prevTokens => {
             const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress);
@@ -664,7 +678,7 @@ function calculate24hChange(token: Token): number {
   const handleTokenClick = async (mintAddress: string) => {
     try {
       setLoading(true);
-      const tokenData = await fetchTokenMetadata(mintAddress);
+      const tokenData = await fetchTokenWithJupiter(mintAddress);
       
       // Update this specific token in our list
       setTokens(prevTokens => 

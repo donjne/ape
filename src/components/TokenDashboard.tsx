@@ -16,39 +16,102 @@ import type { Token, SortDirection } from "@/types/token";
 import TradeModal from './TradeModal';
 import { TableSkeleton } from '@/components/TableSkeleton';
 import { io, Socket } from "socket.io-client";
-// import { Connection, PublicKey } from "@solana/web3.js";
-// import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
+import { Connection, PublicKey } from "@solana/web3.js";
+import { getMplTokenMetadataProgramId } from '@metaplex-foundation/mpl-token-metadata';
 
-async function fetchTokenDetailsFromAPI(mintAddress: string): Promise<Token> {
-  const apiKey = process.env.NEXT_PUBLIC_COINGECKO_KEY; // Replace with your actual API key
-  const response = await fetch(`https://api.coingecko.com/api/v3/coins/solana/contract/${mintAddress}?localization=false&x_cg_pro_api_key=${apiKey}`);
-  
-  if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
+// async function fetchTokenMetadata(mintAddress: string): Promise<any> {
+//   const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed'); // Use appropriate endpoint
+//   const mintPublicKey = new PublicKey(mintAddress);
+
+//   try {
+//     const [metadataPDA] = await PublicKey.findProgramAddressSync(
+//       [
+//         Buffer.from('metadata'),
+//         getMplTokenMetadataProgramId().toBuffer(),
+//         mintPublicKey.toBuffer(),
+//       ],
+//       Metadata.getProgramId()
+//     );
+
+//     const accountInfo = await connection.getAccountInfo(metadataPDA);
+    
+//     if (!accountInfo || !accountInfo.data) {
+//       throw new Error('Metadata account not found or empty');
+//     }
+
+//     const metadata = Metadata.fromAccountInfo(accountInfo)[0];
+//     const uri = metadata.data.uri;
+
+//     const response = await fetch(uri);
+//     const jsonMetadata = await response.json();
+
+//     // Here we format the response to match the CoinGecko structure
+//     return {
+//       mintAddress: mintAddress,
+//       name: jsonMetadata.name || '',
+//       symbol: jsonMetadata.symbol || '',
+//       age: 0, // You would need external logic or timestamp from metadata to calculate this
+//       decimals: jsonMetadata.decimals || 9, // Assuming it's in the metadata, otherwise default to 9
+//       createdAt: metadata.updateAuthority ? metadata.updateAuthority.toBase58() : '1', // Placeholder; might need actual creation time
+//       signature: '', // Not directly available from metadata; might need transaction history to get this
+//       marketCap: 0, // This would require external price data
+//       volume24h: 0, // Requires external volume data
+//       priceUSD: 0, // Requires external pricing service
+//       change24h: 0, // Requires external data for price change calculation
+//       links: {
+//         pump: `https://pump.fun/coin/${mintAddress}/`, // Assuming this link format
+//         telegram: jsonMetadata.telegram || '',
+//         twitter: jsonMetadata.twitter ? `https://twitter.com/${jsonMetadata.twitter}` : '',
+//         website: jsonMetadata.website || ''
+//       }
+//     };
+//   } catch (error) {
+//     console.error('Error fetching or decoding token metadata:', error);
+//     throw error;
+//   }
+// }
+
+async function fetchTokenMetadata(mintAddress: string): Promise<Token> {
+  try {
+    const response = await fetch(`/api/tokens/coingecko?mintAddress=${mintAddress}`);
+    if (!response.ok) throw new Error('Failed to fetch token details');
+    return await response.json() as Token;
+  } catch (error) {
+    console.error('Error fetching token metadata:', error);
+    throw error;
   }
-
-  const data = await response.json();
-
-  return {
-    mintAddress: mintAddress,
-    name: data.name,
-    symbol: data.symbol,
-    age: 0, // We'll update this later
-    decimals: 9,
-    createdAt: 1,
-    signature: '',
-    marketCap: data.market_data.market_cap.usd,
-    volume24h: data.market_data.total_volume.usd,
-    priceUSD: data.market_data.current_price.usd,
-    change24h: data.market_data.price_change_percentage_24h,
-    links: {
-      pump: `https://pump.fun/coin/${mintAddress}/`, // Fill in with actual links if available
-      telegram: data.links.telegram_channel_identifier || '',
-      twitter: data.links.twitter_screen_name ? `https://twitter.com/${data.links.twitter_screen_name}` : '',
-      website: data.links.homepage[0] || ''
-    }
-  };
 }
+
+// async function fetchTokenDetailsFromAPI(mintAddress: string): Promise<Token> {
+//   const apiKey = process.env.NEXT_PUBLIC_COINGECKO_KEY; // Replace with your actual API key
+//   const response = await fetch(`https://api.coingecko.com/api/v3/coins/solana/contract/${mintAddress}?localization=false&x_cg_pro_api_key=${apiKey}`);
+  
+//   if (!response.ok) {
+//     throw new Error(`API request failed with status ${response.status}`);
+//   }
+
+//   const data = await response.json();
+
+//   return {
+//     mintAddress: mintAddress,
+//     name: data.name,
+//     symbol: data.symbol,
+//     age: 0, // We'll update this later
+//     decimals: 9,
+//     createdAt: 1,
+//     signature: '',
+//     marketCap: data.market_data.market_cap.usd,
+//     volume24h: data.market_data.total_volume.usd,
+//     priceUSD: data.market_data.current_price.usd,
+//     change24h: data.market_data.price_change_percentage_24h,
+//     links: {
+//       pump: `https://pump.fun/coin/${mintAddress}/`, // Fill in with actual links if available
+//       telegram: data.links.telegram_channel_identifier || '',
+//       twitter: data.links.twitter_screen_name ? `https://twitter.com/${data.links.twitter_screen_name}` : '',
+//       website: data.links.homepage[0] || ''
+//     }
+//   };
+// }
 
 
 // async function getTokenDetails(mintAddress: string): Promise<{ name: string, symbol: string }> {
@@ -240,7 +303,7 @@ function calculate24hChange(token: Token): number {
           const enhancedTokens = await Promise.all(
             initialTokens.map(async (token) => {
               try {
-                const details = await fetchTokenDetailsFromAPI(token.mintAddress);
+                const details = await fetchTokenMetadata(token.mintAddress);
                 return {
                   ...token,
                   ...details,
@@ -275,7 +338,7 @@ function calculate24hChange(token: Token): number {
       channel.bind('new-token', async (newToken: Token) => {
         try {
           // Fetch additional details for the new token
-          const details = await fetchTokenDetailsFromAPI(newToken.mintAddress);
+          const details = await fetchTokenMetadata(newToken.mintAddress);
           
           setTokens(prevTokens => {
             const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress);
@@ -587,7 +650,7 @@ function calculate24hChange(token: Token): number {
   const handleTokenClick = async (mintAddress: string) => {
     try {
       setLoading(true);
-      const tokenData = await fetchTokenDetailsFromAPI(mintAddress);
+      const tokenData = await fetchTokenMetadata(mintAddress);
       
       // Update this specific token in our list
       setTokens(prevTokens => 

@@ -1,21 +1,26 @@
-// pages/api/fetchTokenDetails.ts
-
-import { NextApiRequest, NextApiResponse } from 'next';
+// app/api/tokens/coingecko/route.ts
+import type { NextRequest } from 'next/server';
 import type { Token } from '@/types/token'
 
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Token | { error: string }>) {
-  const { mintAddress } = req.query;
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const mintAddress = searchParams.get('mintAddress');
 
   // Check if mintAddress is provided
-  if (!mintAddress || typeof mintAddress !== 'string') {
-    return res.status(400).json({ error: 'Invalid or missing mintAddress' });
+  if (!mintAddress) {
+    return new Response(JSON.stringify({ error: 'Invalid or missing mintAddress' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const apiKey = process.env.COINGECKO_API_KEY; // Ensure this is set in your environment variables
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key not configured' });
+    return new Response(JSON.stringify({ error: 'API Key not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -48,12 +53,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
     };
 
-    res.status(200).json(token);
+    return new Response(JSON.stringify(token), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     } else {
-      res.status(500).json({ error: 'An unexpected error occurred' });
+      return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 }

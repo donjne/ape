@@ -71,14 +71,28 @@ import { getMplTokenMetadataProgramId } from '@metaplex-foundation/mpl-token-met
 //   }
 // }
 
+// async function fetchTokenMetadata(mintAddress: string): Promise<Token> {
+//   try {
+//     const response = await fetch(`/api/tokens/coingecko?mintAddress=${mintAddress}`);
+//     if (!response.ok) throw new Error('Failed to fetch token details');
+//     return await response.json() as Token;
+//   } catch (error) {
+//     console.error('Error fetching token metadata:', error);
+//     throw error;
+//   }
+// }
+
 async function fetchTokenMetadata(mintAddress: string): Promise<Token> {
   try {
     const response = await fetch(`/api/tokens/coingecko?mintAddress=${mintAddress}`);
-    if (!response.ok) throw new Error('Failed to fetch token details');
+    if (!response.ok) {
+      const errorData = await response.json(); // Try to parse error details from response
+      throw new Error(`Failed to fetch token details: ${errorData.error || response.statusText}`);
+    }
     return await response.json() as Token;
   } catch (error) {
     console.error('Error fetching token metadata:', error);
-    throw error;
+    throw error; // Re-throwing the error for the caller to handle
   }
 }
 

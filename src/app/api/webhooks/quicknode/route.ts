@@ -323,63 +323,87 @@
 // }
 
 // @ts-nocheck
-import { NextApiRequest, NextApiResponse } from 'next';
-import { tokenHelpers } from '@/lib/redis';
-import { Server as SocketIOServer } from 'socket.io';
-import type { Token } from '@/types/token';
+import { NextResponse } from 'next/server'
+import { pusherServer } from '@/lib/pusher'
+import type { Token } from '@/types/token'
 
-interface WebhookPayload {
-  blockTime: number;
-  newTokens: Token[];
-}
-
-let io: SocketIOServer;
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export async function POST(req: Request) {
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method Not Allowed' });
-    }
+    const body = await req.json()
+    const newToken = body.token as Token
 
     // Validate security token
-    const securityToken = req.headers['x-api-key'];
+    const securityToken = req.headers.get('x-api-key')
     if (securityToken !== process.env.QUICKNODE_WEBHOOK_TOKEN) {
-      return res.status(401).json({ error: 'Invalid security token' });
+      return NextResponse.json({ error: 'Invalid security token' }, { status: 401 })
     }
 
-    const payload: WebhookPayload = req.body;
+    // Trigger event on Pusher
+    await pusherServer.trigger('tokens-channel', 'new-token', newToken)
 
-    if (!payload?.newTokens || !Array.isArray(payload.newTokens)) {
-      return res.status(400).json({ error: 'Invalid payload' });
-    }
-
-    // Process and store tokens
-    const processedTokens = await Promise.all(
-      payload.newTokens.map(async (token) => {
-        // Store in Redis
-        await tokenHelpers.storeToken(token);
-        return token;
-      })
-    );
-
-    // Initialize Socket.IO if not already initialized
-    if (!io) {
-      io = new SocketIOServer((res.socket as any).server);
-      
-      // Set up Socket.IO error handling
-      io.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error);
-      });
-    }
-
-    // Emit new tokens to all connected clients
-    processedTokens.forEach(token => {
-      io.emit('newToken', token);
-    });
-
-    res.status(200).json({ success: true, processedTokens });
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    res.status(500).json({ error: 'Failed to process webhook' });
+    console.error('Webhook error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+// import { NextApiRequest, NextApiResponse } from 'next';
+// import { tokenHelpers } from '@/lib/redis';
+// import { Server as SocketIOServer } from 'socket.io';
+// import type { Token } from '@/types/token';
+
+// interface WebhookPayload {
+//   blockTime: number;
+//   newTokens: Token[];
+// }
+
+// let io: SocketIOServer;
+
+// export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+//   try {
+//     if (req.method !== 'POST') {
+//       return res.status(405).json({ error: 'Method Not Allowed' });
+//     }
+
+//     // Validate security token
+//     const securityToken = req.headers['x-api-key'];
+//     if (securityToken !== process.env.QUICKNODE_WEBHOOK_TOKEN) {
+//       return res.status(401).json({ error: 'Invalid security token' });
+//     }
+
+//     const payload: WebhookPayload = req.body;
+
+//     if (!payload?.newTokens || !Array.isArray(payload.newTokens)) {
+//       return res.status(400).json({ error: 'Invalid payload' });
+//     }
+
+//     // Process and store tokens
+//     const processedTokens = await Promise.all(
+//       payload.newTokens.map(async (token) => {
+//         // Store in Redis
+//         await tokenHelpers.storeToken(token);
+//         return token;
+//       })
+//     );
+
+//     // Initialize Socket.IO if not already initialized
+//     if (!io) {
+//       io = new SocketIOServer((res.socket as any).server);
+      
+//       // Set up Socket.IO error handling
+//       io.on('connect_error', (error) => {
+//         console.error('Socket.IO connection error:', error);
+//       });
+//     }
+
+//     // Emit new tokens to all connected clients
+//     processedTokens.forEach(token => {
+//       io.emit('newToken', token);
+//     });
+
+//     res.status(200).json({ success: true, processedTokens });
+//   } catch (error) {
+//     console.error('Error processing webhook:', error);
+//     res.status(500).json({ error: 'Failed to process webhook' });
+//   }
+// }

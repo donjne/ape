@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import clsx from "clsx";
 import { fetchTokens, fetchToken } from '@/lib/api';
+import { pusherClient } from '@/lib/pusher'
 import type { Token, SortDirection } from "@/types/token";
 import TradeModal from './TradeModal';
 import { TableSkeleton } from '@/components/TableSkeleton';
@@ -229,78 +230,112 @@ function calculate24hChange(token: Token): number {
   //   loadTokens();
   // }, [toast]);
 
+  // USING PUSHER
+  useEffect(() => {
+    const channel = pusherClient.subscribe('tokens-channel')
+
+    channel.bind('new-token', (newToken: Token) => {
+      try {
+        setTokens(prevTokens => {
+          const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress)
+          if (exists) return prevTokens
+          
+          const tokenWithAge = {
+            ...newToken,
+            age: calculateTokenAge(newToken.createdAt)
+          }
+          
+          toast({
+            title: 'New Token',
+            description: `New token detected: ${tokenWithAge.symbol}`,
+          })
+          
+          return [tokenWithAge, ...prevTokens]
+        })
+      } catch (err) {
+        console.error('Error processing new token:', err)
+      }
+    })
+
+    // Cleanup
+    return () => {
+      channel.unbind_all()
+      pusherClient.unsubscribe('tokens-channel')
+    }
+  }, [])
+
     // Initialize Socket.IO connection
-    useEffect(() => {
-      const socketInstance = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || '', {
-        reconnectionDelay: 1000,
-        reconnection: true,
-        reconnectionAttempts: 10,
-        transports: ['websocket'],
-        agent: false,
-        upgrade: false,
-        rejectUnauthorized: false
-      });
+    // useEffect(() => {
+    //   const socketInstance = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || '', {
+    //     reconnectionDelay: 1000,
+    //     reconnection: true,
+    //     reconnectionAttempts: 10,
+    //     transports: ['websocket'],
+    //     agent: false,
+    //     upgrade: false,
+    //     rejectUnauthorized: false
+    //   });
   
-      socketInstance.on('connect', () => {
-        console.log('Connected to WebSocket');
-      });
+    //   socketInstance.on('connect', () => {
+    //     console.log('Connected to WebSocket');
+    //   });
   
-      socketInstance.on('disconnect', () => {
-        console.log('Disconnected from WebSocket');
-      });
+    //   socketInstance.on('disconnect', () => {
+    //     console.log('Disconnected from WebSocket');
+    //   });
   
-      socketInstance.on('newToken', (newToken: Token) => {
-        try {
-          setTokens(prevTokens => {
-            // Check if token already exists
-            const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress);
-            if (exists) return prevTokens;
+    //   socketInstance.on('newToken', (newToken: Token) => {
+    //     try {
+    //       setTokens(prevTokens => {
+    //         // Check if token already exists
+    //         const exists = prevTokens.some(t => t.mintAddress === newToken.mintAddress);
+    //         if (exists) return prevTokens;
             
-            // Add new token with enhanced data
-            const tokenWithAge = {
-              ...newToken,
-              age: calculateTokenAge(newToken.createdAt)
-            };
+    //         // Add new token with enhanced data
+    //         const tokenWithAge = {
+    //           ...newToken,
+    //           age: calculateTokenAge(newToken.createdAt)
+    //         };
             
-            // Show notification
-            toast({
-              title: 'New Token',
-              description: `New token detected: ${tokenWithAge.symbol}`,
-            });
+    //         // Show notification
+    //         toast({
+    //           title: 'New Token',
+    //           description: `New token detected: ${tokenWithAge.symbol}`,
+    //         });
             
-            return [tokenWithAge, ...prevTokens];
-          });
-        } catch (err) {
-          console.error('Error processing new token:', err);
-        }
-      });
+    //         return [tokenWithAge, ...prevTokens];
+    //       });
+    //     } catch (err) {
+    //       console.error('Error processing new token:', err);
+    //     }
+    //   });
   
-      socketInstance.on('tokenUpdate', (updatedToken: Token) => {
-        setTokens(prevTokens => 
-          prevTokens.map(token => 
-            token.mintAddress === updatedToken.mintAddress 
-              ? { ...token, ...updatedToken, age: calculateTokenAge(updatedToken.createdAt) }
-              : token
-          )
-        );
-      });
+    //   socketInstance.on('tokenUpdate', (updatedToken: Token) => {
+    //     setTokens(prevTokens => 
+    //       prevTokens.map(token => 
+    //         token.mintAddress === updatedToken.mintAddress 
+    //           ? { ...token, ...updatedToken, age: calculateTokenAge(updatedToken.createdAt) }
+    //           : token
+    //       )
+    //     );
+    //   });
   
-      socketInstance.on('error', (error: Error) => {
-        console.error('Socket error:', error);
-        toast({
-          title: 'Connection Error',
-          description: 'Failed to connect to real-time updates',
-          variant: 'destructive',
-        });
-      });
+    //   socketInstance.on('error', (error: Error) => {
+    //     console.error('Socket error:', error);
+    //     toast({
+    //       title: 'Connection Error',
+    //       description: 'Failed to connect to real-time updates',
+    //       variant: 'destructive',
+    //     });
+    //   });
   
-      setSocket(socketInstance);
+    //   setSocket(socketInstance);
   
-      // Cleanup on unmount
-      return () => {
-        socketInstance.disconnect();
-      };
-    }, []);
+    //   // Cleanup on unmount
+    //   return () => {
+    //     socketInstance.disconnect();
+    //   };
+    // }, []);
 
   // Fetch initial data
   useEffect(() => {

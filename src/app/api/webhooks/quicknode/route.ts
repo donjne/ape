@@ -331,11 +331,18 @@ export async function POST(req: Request) {
   try {
     console.log('Webhook received')
     
+    // Parse JSON from request body
     const body = await req.json()
-    console.log('Webhook body:', body)
+    console.log('Webhook body:', JSON.stringify(body, null, 2))
     
+    // Check if the payload structure is correct
+    if (!body || !body.token || typeof body.token !== 'object') {
+      console.error('Invalid payload structure received')
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
     const newToken = body.token as Token
-    console.log('New token:', newToken)
+    console.log('New token:', JSON.stringify(newToken, null, 2))
 
     // Validate security token
     const securityToken = req.headers.get('x-api-key')
@@ -347,15 +354,69 @@ export async function POST(req: Request) {
     }
 
     // Trigger event on Pusher
-    console.log('Triggering Pusher event on channel: tokens-channel')
-    await pusherServer.trigger('tokens-channel', 'new-token', newToken)
-    console.log('Pusher event triggered successfully')
+    try {
+      console.log('Attempting to trigger Pusher event on channel: tokens-channel')
+      await pusherServer.trigger('tokens-channel', 'new-token', newToken)
+      console.log('Pusher event triggered successfully')
+    } catch (pusherError) {
+      console.error('Pusher error:', {
+        errorType: pusherError.name,
+        errorMessage: pusherError.message,
+        errorStack: pusherError.stack
+      })
+      return NextResponse.json({ error: 'Failed to trigger Pusher event' }, { status: 500 })
+    }
 
+    console.log('Webhook processing completed successfully')
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Webhook error:', error)
+    console.error('Webhook error details:', {
+      errorType: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack
+    })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+// import { NextResponse } from 'next/server'
+// import { pusherServer } from '@/lib/pusher'
+// import type { Token } from '@/types/token'
+
+// export async function POST(req: Request) {
+//   try {
+//     console.log('Webhook received')
+    
+//     const body = await req.json()
+//     console.log('Webhook body:', body)
+    
+//     const newToken = body.token as Token
+//     console.log('New token:', newToken)
+
+//     // Validate security token
+//     const securityToken = req.headers.get('x-api-key')
+//     console.log('Security token received:', securityToken)
+    
+//     if (securityToken !== process.env.QUICKNODE_WEBHOOK_TOKEN) {
+//       console.error('Invalid security token')
+//       return NextResponse.json({ error: 'Invalid security token' }, { status: 401 })
+//     }
+
+//     // Trigger event on Pusher
+//     console.log('Triggering Pusher event on channel: tokens-channel')
+//     await pusherServer.trigger('tokens-channel', 'new-token', newToken)
+//     console.log('Pusher event triggered successfully')
+
+//     return NextResponse.json({ success: true })
+//   } catch (error) {
+//     console.error('Webhook error:', error)
+//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+//   }
+// }
+
+// Add this for GET requests, just for debugging or status check
+export async function GET() {
+  return NextResponse.json({ status: 'Webhook is operational', method: 'GET not allowed for actual webhook usage' }, { status: 200 });
 }
 // import { NextResponse } from 'next/server'
 // import { pusherServer } from '@/lib/pusher'
